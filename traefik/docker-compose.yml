@@ -1,0 +1,79 @@
+version: "3.8"
+
+services:
+
+  traefik:
+    image: "traefik:v2.9"
+    restart: unless-stopped
+    command:
+      # Enable dashboard
+      - "--api=true"
+      - "--api.dashboard=true"
+      - "--ping"
+
+      # Docker mode
+      - "--providers.docker=true"
+
+      # This is the default, but specifying it for clarity
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+
+      # Only expose containers labelled ``traefik.enable=true``
+      - "--providers.docker.exposedbydefault=false"
+
+      # Network to connect to containers
+      - "--providers.docker.network=traefik"
+
+      # Define entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # Define Let's Encrypt resolver
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/home/deployer/store/ops/traefik/certificates:/letsencrypt"
+    networks:
+      - traefik
+    labels:
+      # Redirect all HTTP to HTTPS
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      #- "traefik.http.middlewares.https-redirect.redirectscheme.scheme=permanent"
+      - "traefik.http.routers.http-catchall.rule=HostRegexp(`{any:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=https-redirect"
+
+      # Define common middlewares
+      - "traefik.http.middlewares.csrf.headers.hostsProxyHeaders=X-CSRFToken"
+      - "traefik.http.middlewares.gzip.compress=true"
+      - "traefik.http.middlewares.admin-auth.basicauth.realm=Restricted"
+      - "traefik.http.middlewares.admin-auth.basicauth.users=${DASHBOARD_USER}:${DASHBOARD_PASSWORD}"
+      - "traefik.http.middlewares.dev-auth.basicauth.realm=Restricted"
+      - "traefik.http.middlewares.dev-auth.basicauth.users=${DEV_USER}:${DEV_PASSWORD}"
+
+      - "traefik.http.middlewares.add-www-prefix.redirectregex.regex=^https?://(?:www\\.)?(.*)"
+      - "traefik.http.middlewares.add-www-prefix.redirectregex.replacement=https://www.$${1}"
+      - "traefik.http.middlewares.remove-www-prefix.redirectregex.regex=^https?://www\\.(.*)"
+      - "traefik.http.middlewares.remove-www-prefix.redirectregex.replacement=https://$${1}"
+
+      # Serve internal API
+      - "traefik.enable=true"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-traefik.rule=Host(`${DASHBOARD_URL}`)"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-traefik.entrypoints=websecure"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-traefik.service=api@internal"
+      - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-traefik.middlewares=admin-auth"
+      - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-traefik.addprefix.prefix=/dashboard/"
+
+    healthcheck:
+      test: [ "CMD", "traefik", "healthcheck", "--ping" ]
+
+networks:
+  traefik:
+    external: false
+    name: traefik
