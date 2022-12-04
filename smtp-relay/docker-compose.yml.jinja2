@@ -1,0 +1,22 @@
+version: "3.8"
+services:
+  smtp_relay:
+    image: ghcr.io/radiac/postfix-relay:latest
+    restart: unless-stopped
+    environment:
+      MAIL_HOST: "${MAIL_HOST}"
+      RELAY_HOST: "${RELAY_HOST}"
+      RELAY_PORT: "${RELAY_PORT}"
+      RELAY_USERNAME: "${RELAY_USERNAME}"
+      RELAY_PASSWORD: "${RELAY_PASSWORD}"
+    networks:
+      - smtp-relay
+    {% if bind_host %}
+    ports:
+      - 127.0.0.1:25:25/tcp
+    {% endif %}
+
+networks:
+  smtp-relay:
+    external: false
+    name: smtp-relay

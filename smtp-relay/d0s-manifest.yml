@@ -1,0 +1,10 @@
+apps:
+  smtp-relay:
+    env:
+      MAIL_HOST: "my.example.com"
+      RELAY_HOST: "mail.example.org"
+      RELAY_PORT: "25"
+      RELAY_USERNAME: "me@example.com"
+      RELAY_PASSWORD: "secret"
+    compose_context:
+      network: smtp-relay
