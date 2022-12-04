@@ -2,7 +2,9 @@
 docker0s manifest: traefik
 ==========================
 
-Traefik is an edge router - it routes inbound traffic to the correct container.
+`Traefik`_ is an edge router - it routes inbound traffic to the correct container.
+
+.. _traefik: https://doc.traefik.io/traefik/
 
 Most official docker0s app manifests expect this to be part of your host manifest, and
 will register themselves with Traefik using Docker labels.
@@ -27,24 +29,24 @@ Current known limitations:
 Environment variables
 =====================
 
-``DASHBOARD_URL``:
+``DASHBOARD_URL``
   The URL to serve the dashboard on
 
   Default: ``traefik.example.com``
 
-``DASHBOARD_USER``:
+``DASHBOARD_USER``
   The username for HTTP authentication to access the dashboard
 
   Default: ``admin``
 
-``DASHBOARD_PASSWORD``:
+``DASHBOARD_PASSWORD``
   Password. Must be encrypted - use the ``mkpass`` command to generate the string::
 
       docker0s cmd traefik mkpass
 
   Default: ``password`` (encrypted using ``mkpass``)
 
-``LETSENCRYPT_EMAIL``:
+``LETSENCRYPT_EMAIL``
   The email address to use when registering HTTPS certificates
 
   Default: ``user@example.com``
@@ -53,7 +55,11 @@ Environment variables
 Example usage
 =============
 
-Prepare a host ready to serve apps over HTTPSs::
+Generate a password for ``DASHBOARD_PASSWORD``::
+
+    docker0s cmd traefik mkpass
+
+Prepare a host ready to serve apps over HTTPS::
 
     host:
       name: myserver.example.com

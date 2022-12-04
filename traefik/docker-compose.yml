@@ -3,7 +3,7 @@ version: "3.8"
 services:
 
   traefik:
-    image: "traefik:v2.9"
+    image: "docker.io/traefik:v2.9"
     restart: unless-stopped
     command:
       # Enable dashboard
@@ -70,6 +70,8 @@ services:
       - "traefik.http.routers.${COMPOSE_PROJECT_NAME}-traefik.middlewares=admin-auth"
       - "traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-traefik.addprefix.prefix=/dashboard/"
 
+      # Ask watchtower to monitor and upgrade
+      - "com.centurylinklabs.watchtower.enable=true"
     healthcheck:
       test: [ "CMD", "traefik", "healthcheck", "--ping" ]
 
